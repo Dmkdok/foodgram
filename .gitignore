@@ -2,6 +2,7 @@ frontend/node_modules
 infra/frontend/build
 .env
 123.py
+migrations/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

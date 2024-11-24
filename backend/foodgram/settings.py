@@ -1,5 +1,10 @@
 import os
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -125,9 +130,8 @@ DJOSER = {
     'HIDE_USERS': False,
     'SERIALIZERS': {
         'user': 'api.serializers.CustomUserSerializer',
-        'current_user': 'api.serializers.CustomUserSerializer',
-        'user_list': 'api.serializers.CustomUserSerializer',
         'user_create': 'api.serializers.CustomUserCreateSerializer',
+        'current_user': 'api.serializers.CustomUserSerializer',
     },
     'PERMISSIONS': {
         'user_list': ['rest_framework.permissions.AllowAny'],

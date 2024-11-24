@@ -1,16 +1,32 @@
-from django.core.validators import MinValueValidator
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+
+from foodgram.constants import (
+    MAX_COOKING_TIME,
+    MAX_INGRDEINTS_AMOUNT,
+    MAX_LENGTH_INGREDIENT_NAME,
+    MAX_LENGTH_MEASUREMENT_UNIT,
+    MAX_LENGTH_RECIPE_NAME,
+    MAX_LENGTH_TAG_NAME,
+    MAX_LENGTH_TAG_SLUG,
+    MIN_COOKING_TIME,
+    MIN_INGRDEINTS_AMOUNT,
+)
 
 CustomUser = get_user_model()
 
 
 class Tag(models.Model):
     name = models.CharField(
-        max_length=200, unique=True, verbose_name='Название тега'
+        max_length=MAX_LENGTH_TAG_NAME,
+        unique=True,
+        verbose_name='Название тега',
     )
     slug = models.SlugField(
-        max_length=200, unique=True, verbose_name='Уникальный слаг'
+        max_length=MAX_LENGTH_TAG_SLUG,
+        unique=True,
+        verbose_name='Уникальный слаг',
     )
 
     class Meta:
@@ -24,16 +40,18 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=200, unique=True, verbose_name='Название ингредиента'
+        max_length=MAX_LENGTH_INGREDIENT_NAME,
+        unique=True,
+        verbose_name='Название ингредиента',
     )
     measurement_unit = models.CharField(
-        max_length=200, verbose_name='Единица измерения'
+        max_length=MAX_LENGTH_MEASUREMENT_UNIT,
+        verbose_name='Единица измерения',
     )
 
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
-        ordering = ['name']
         constraints = [
             models.UniqueConstraint(
                 fields=['name', 'measurement_unit'], name='unique_ingredient'
@@ -51,7 +69,9 @@ class Recipe(models.Model):
         related_name='recipes',
         verbose_name='Автор рецепта',
     )
-    name = models.CharField(max_length=200, verbose_name='Название рецепта')
+    name = models.CharField(
+        max_length=MAX_LENGTH_RECIPE_NAME, verbose_name='Название рецепта'
+    )
     image = models.ImageField(
         upload_to='recipes/images/',
         blank=True,
@@ -61,13 +81,20 @@ class Recipe(models.Model):
     text = models.TextField(verbose_name='Описание рецепта')
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='IngredientAmount',
+        through='RecipeIngredient',
         verbose_name='Ингредиенты',
     )
     tags = models.ManyToManyField(Tag, verbose_name='Теги')
     cooking_time = models.PositiveSmallIntegerField(
         validators=[
-            MinValueValidator(1, message='Время должно быть больше 0!')
+            MinValueValidator(
+                MIN_COOKING_TIME,
+                message=f'Время должно быть больше {MIN_COOKING_TIME}!',
+            ),
+            MaxValueValidator(
+                MAX_COOKING_TIME,
+                message=f'Время не должно превышать {MAX_COOKING_TIME} минут!',
+            ),
         ],
         verbose_name='Время приготовления',
     )
@@ -84,16 +111,27 @@ class Recipe(models.Model):
         return self.name
 
 
-class IngredientAmount(models.Model):
-    ingredient = models.ForeignKey(
-        Ingredient, on_delete=models.CASCADE, verbose_name='Ингредиент'
-    )
+class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, verbose_name='Рецепт'
     )
+    ingredient = models.ForeignKey(
+        Ingredient, on_delete=models.CASCADE, verbose_name='Ингредиент'
+    )
     amount = models.PositiveSmallIntegerField(
         validators=[
-            MinValueValidator(1, message='Количество должно быть больше 0!')
+            MinValueValidator(
+                MIN_INGRDEINTS_AMOUNT,
+                message=(
+                    f'Количество должно быть больше {MIN_INGRDEINTS_AMOUNT}!'
+                ),
+            ),
+            MaxValueValidator(
+                MAX_INGRDEINTS_AMOUNT,
+                message=(
+                    f'Время не должно превышать {MAX_INGRDEINTS_AMOUNT} минут!'
+                ),
+            ),
         ],
         verbose_name='Количество',
     )
@@ -101,6 +139,7 @@ class IngredientAmount(models.Model):
     class Meta:
         verbose_name = 'Количество ингредиента'
         verbose_name_plural = 'Количество ингредиентов'
+        default_related_name = 'recipe_ingredients'
         constraints = [
             models.UniqueConstraint(
                 fields=['ingredient', 'recipe'],
@@ -129,6 +168,7 @@ class Favorite(models.Model):
     class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранные'
+        default_related_name = 'favorites'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'], name='unique_favorite_recipe'
@@ -156,6 +196,7 @@ class ShoppingCart(models.Model):
     class Meta:
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
+        default_related_name = 'shopping_cart'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'], name='unique_shopping_cart'

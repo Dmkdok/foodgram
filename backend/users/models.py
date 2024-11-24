@@ -1,15 +1,20 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
-from django.core.validators import RegexValidator, FileExtensionValidator
+
+from foodgram.constants import (ALLOWED_EXTENSIONS, MAX_LENGTH_EMAIL,
+                                MAX_LENGTH_USER_FIELD)
 
 
 class CustomUser(AbstractUser):
     email = models.EmailField(
-        verbose_name='адрес электронной почты', unique=True, max_length=254
+        verbose_name='адрес электронной почты',
+        unique=True,
+        max_length=MAX_LENGTH_EMAIL,
     )
     username = models.CharField(
         verbose_name='уникальный юзернейм',
-        max_length=150,
+        max_length=MAX_LENGTH_USER_FIELD,
         unique=True,
         validators=[
             RegexValidator(
@@ -21,15 +26,19 @@ class CustomUser(AbstractUser):
             )
         ],
     )
-    first_name = models.CharField(verbose_name='имя', max_length=150)
-    last_name = models.CharField(verbose_name='фамилия', max_length=150)
+    first_name = models.CharField(
+        verbose_name='имя', max_length=MAX_LENGTH_USER_FIELD
+    )
+    last_name = models.CharField(
+        verbose_name='фамилия', max_length=MAX_LENGTH_USER_FIELD
+    )
     avatar = models.ImageField(
-        upload_to='users/avatars/',
+        upload_to='users/',
         verbose_name='аватар',
         null=True,
         blank=True,
         validators=[
-            FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png']),
+            FileExtensionValidator(allowed_extensions=ALLOWED_EXTENSIONS),
         ],
     )
 
