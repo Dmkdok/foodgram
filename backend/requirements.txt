@@ -4,7 +4,5 @@ djangorestframework==3.12.4
 djoser==2.1.0
 drf-extra-fields==3.7.0
 python-dotenv==1.0.1
-flake8
-flake8-isort
 Pillow
 tqdm

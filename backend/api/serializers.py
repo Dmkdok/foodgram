@@ -1,4 +1,3 @@
-from django.core.validators import MinValueValidator
 from django.forms import ValidationError
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
@@ -7,9 +6,15 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from users.models import CustomUser, Follow
 
+from backend.core.validators import (max_amount_validator,
+                                     max_cooking_time_validator,
+                                     min_amount_validator,
+                                     min_cooking_time_validator)
+
 
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания нового пользователя."""
+
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -34,6 +39,7 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
 
 class CustomUserSerializer(serializers.ModelSerializer):
     """Сериализатор для пользователя."""
+
     is_subscribed = serializers.SerializerMethodField()
     avatar = Base64ImageField(required=False)
 
@@ -61,6 +67,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
 class AvatarSerializer(serializers.ModelSerializer):
     """Сериализатор для обновления аватара пользователя."""
+
     avatar = Base64ImageField(required=False)
 
     class Meta:
@@ -78,6 +85,7 @@ class AvatarSerializer(serializers.ModelSerializer):
 
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор для тегов."""
+
     class Meta:
         model = Tag
         fields = ('id', 'name', 'slug')
@@ -85,6 +93,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 class IngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для ингредиентов."""
+
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
@@ -92,6 +101,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для ингредиентов в рецепте."""
+
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
@@ -105,6 +115,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор для краткого представления рецепта."""
+
     image = Base64ImageField()
 
     class Meta:
@@ -114,6 +125,7 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 
 class RecipeListSerializer(serializers.ModelSerializer):
     """Сериализатор для списка рецептов."""
+
     tags = TagSerializer(many=True, read_only=True)
     author = CustomUserSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(
@@ -169,14 +181,13 @@ class RecipeListSerializer(serializers.ModelSerializer):
 
 class IngredientWriteSerializer(serializers.ModelSerializer):
     """Сериализатор для записи ингредиентов в рецепт."""
+
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all(),
         source='ingredient',
     )
-    amount = serializers.IntegerField(
-        validators=(
-            MinValueValidator(1, message=f'Количество должно быть больше {0}'),
-        ),
+    amount = serializers.PositiveSmallIntegerField(
+        validators=[min_amount_validator, max_amount_validator],
     )
 
     class Meta:
@@ -186,6 +197,7 @@ class IngredientWriteSerializer(serializers.ModelSerializer):
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания и обновления рецепта."""
+
     author = CustomUserSerializer(required=False)
     image = Base64ImageField(required=True)
     tags = serializers.PrimaryKeyRelatedField(
@@ -195,9 +207,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         many=True, required=True, source='recipe_ingredients'
     )
     cooking_time = serializers.IntegerField(
-        validators=(
-            MinValueValidator(1, message=f'Время должно быть больше {0}'),
-        ),
+        validators=[min_cooking_time_validator, max_cooking_time_validator]
     )
 
     class Meta:
@@ -298,6 +308,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
 class FollowSerializer(serializers.ModelSerializer):
     """Сериализатор для подписок."""
+
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
@@ -350,7 +361,7 @@ class UnfollowSerializer(serializers.Serializer):
         Follow.objects.filter(
             user=self.context['request'].user, author=author
         ).delete()
-        return {'detail': f'Вы успешно отписались от {author.username}!'}
+        return {'detail': f'Вы успешно отписались от {author.username}'}
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):

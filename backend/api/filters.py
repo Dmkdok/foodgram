@@ -25,10 +25,6 @@ class RecipeFilter(FilterSet):
         model = Recipe
         fields = ['tags', 'author', 'is_favorited', 'is_in_shopping_cart']
 
-    def filter_by_tags(self, queryset, name, value):
-        tags = value.split(',')
-        return queryset.filter(tags__slug__in=tags)
-
     def filter_by_favorites(self, queryset, name, value):
         user = self.request.user
         if value and user.is_authenticated:

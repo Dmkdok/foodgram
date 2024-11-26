@@ -1,9 +1,9 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 
-from foodgram.constants import (ALLOWED_EXTENSIONS, MAX_LENGTH_EMAIL,
-                                MAX_LENGTH_USER_FIELD)
+from backend.core.constants import MAX_LENGTH_EMAIL, MAX_LENGTH_USER_FIELD
+from backend.core.validators import (avatar_extension_validator,
+                                     username_validator)
 
 
 class CustomUser(AbstractUser):
@@ -17,13 +17,7 @@ class CustomUser(AbstractUser):
         max_length=MAX_LENGTH_USER_FIELD,
         unique=True,
         validators=[
-            RegexValidator(
-                regex=r'^[\w.@+-]+$',
-                message=(
-                    'Имя пользователя может содержать только буквы, '
-                    'цифры и символы @/./+/-/_'
-                ),
-            )
+            username_validator
         ],
     )
     first_name = models.CharField(
@@ -37,9 +31,7 @@ class CustomUser(AbstractUser):
         verbose_name='аватар',
         null=True,
         blank=True,
-        validators=[
-            FileExtensionValidator(allowed_extensions=ALLOWED_EXTENSIONS),
-        ],
+        validators=[avatar_extension_validator],
     )
 
     USERNAME_FIELD = 'email'
@@ -69,8 +61,9 @@ class Follow(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Подписка'
+        verbose_name = 'подписка'
         verbose_name_plural = 'Подписки'
+        default_related_name = 'follows'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'author'], name='unique_follow'
