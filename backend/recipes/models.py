@@ -1,14 +1,19 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from backend.core.constants import (MAX_LENGTH_INGREDIENT_NAME,
-                                    MAX_LENGTH_MEASUREMENT_UNIT,
-                                    MAX_LENGTH_RECIPE_NAME,
-                                    MAX_LENGTH_TAG_NAME, MAX_LENGTH_TAG_SLUG)
-from backend.core.validators import (max_amount_validator,
-                                     max_cooking_time_validator,
-                                     min_amount_validator,
-                                     min_cooking_time_validator)
+from core.constants import (
+    MAX_LENGTH_INGREDIENT_NAME,
+    MAX_LENGTH_MEASUREMENT_UNIT,
+    MAX_LENGTH_RECIPE_NAME,
+    MAX_LENGTH_TAG_NAME,
+    MAX_LENGTH_TAG_SLUG,
+)
+from core.validators import (
+    max_amount_validator,
+    max_cooking_time_validator,
+    min_amount_validator,
+    min_cooking_time_validator,
+)
 
 CustomUser = get_user_model()
 

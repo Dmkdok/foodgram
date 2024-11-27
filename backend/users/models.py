@@ -1,9 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from backend.core.constants import MAX_LENGTH_EMAIL, MAX_LENGTH_USER_FIELD
-from backend.core.validators import (avatar_extension_validator,
-                                     username_validator)
+from core.constants import MAX_LENGTH_EMAIL, MAX_LENGTH_USER_FIELD
+from core.validators import avatar_extension_validator, username_validator
 
 
 class CustomUser(AbstractUser):
@@ -16,9 +15,7 @@ class CustomUser(AbstractUser):
         verbose_name='уникальный юзернейм',
         max_length=MAX_LENGTH_USER_FIELD,
         unique=True,
-        validators=[
-            username_validator
-        ],
+        validators=[username_validator],
     )
     first_name = models.CharField(
         verbose_name='имя', max_length=MAX_LENGTH_USER_FIELD

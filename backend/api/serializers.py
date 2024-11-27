@@ -1,15 +1,23 @@
 from django.forms import ValidationError
 from drf_extra_fields.fields import Base64ImageField
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from users.models import CustomUser, Follow
 
-from backend.core.validators import (max_amount_validator,
-                                     max_cooking_time_validator,
-                                     min_amount_validator,
-                                     min_cooking_time_validator)
+from core.validators import (
+    max_amount_validator,
+    max_cooking_time_validator,
+    min_amount_validator,
+    min_cooking_time_validator,
+)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
+from users.models import CustomUser, Follow
 
 
 class CustomUserCreateSerializer(serializers.ModelSerializer):
@@ -186,7 +194,7 @@ class IngredientWriteSerializer(serializers.ModelSerializer):
         queryset=Ingredient.objects.all(),
         source='ingredient',
     )
-    amount = serializers.PositiveSmallIntegerField(
+    amount = serializers.IntegerField(
         validators=[min_amount_validator, max_amount_validator],
     )
 
@@ -207,7 +215,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         many=True, required=True, source='recipe_ingredients'
     )
     cooking_time = serializers.IntegerField(
-        validators=[min_cooking_time_validator, max_cooking_time_validator]
+        validators=[min_cooking_time_validator, max_cooking_time_validator],
     )
 
     class Meta:
