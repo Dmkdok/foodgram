@@ -4,7 +4,7 @@ import os
 from django.core.management.base import BaseCommand
 from tqdm import tqdm
 
-from recipes.models import Ingredient
+from recipes.models import Ingredient, Tag
 
 
 class Command(BaseCommand):
@@ -16,17 +16,23 @@ class Command(BaseCommand):
         )
 
         # Путь к файлу ingredients.json
-        file_path = os.path.join(
-            base_dir, '..', '..', 'data', 'ingredients.json'
+        ingredients_file_path = os.path.join(
+            base_dir, '..', 'data', 'ingredients.json'
         )
 
-        if not os.path.exists(file_path):
+        # Путь к файлу tags.json
+        tags_file_path = os.path.join(base_dir, '..', 'data', 'tags.json')
+
+        # Загрузка ингредиентов
+        if not os.path.exists(ingredients_file_path):
             self.stdout.write(
-                self.style.ERROR(f'File {file_path} does not exist')
+                self.style.ERROR(
+                    f'File {ingredients_file_path} does not exist'
+                )
             )
             return
 
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(ingredients_file_path, 'r', encoding='utf-8') as file:
             data = json.load(file)
 
         if not data:
@@ -53,3 +59,34 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS('Ingredients loaded successfully')
         )
+
+        # Загрузка тегов
+        if not os.path.exists(tags_file_path):
+            self.stdout.write(
+                self.style.ERROR(f'File {tags_file_path} does not exist')
+            )
+            return
+
+        with open(tags_file_path, 'r', encoding='utf-8') as file:
+            tags_data = json.load(file)
+
+        if not tags_data:
+            self.stdout.write(self.style.WARNING('No tags found in the file.'))
+            return
+
+        self.stdout.write(f'Processing {len(tags_data)} tags...')
+
+        for item in tqdm(tags_data, desc="Loading tags"):
+            name = item.get('name')
+            slug = item.get('slug')
+
+            if not name or not slug:
+                continue
+
+            Tag.objects.update_or_create(
+                name=name,
+                slug=slug,
+                defaults={'name': name, 'slug': slug},
+            )
+
+        self.stdout.write(self.style.SUCCESS('Tags loaded successfully'))

@@ -1,0 +1,12 @@
+[
+    {"name": "Вегетарианское", "slug": "vegetarian"},
+    {"name": "Веганское", "slug": "vegan"},
+    {"name": "Без глютена", "slug": "gluten-free"},
+    {"name": "Без лактозы", "slug": "lactose-free"},
+    {"name": "Низкокалорийное", "slug": "low-calorie"},
+    {"name": "Высокобелковое", "slug": "high-protein"},
+    {"name": "Детское", "slug": "kids"},
+    {"name": "Постное", "slug": "fasting"},
+    {"name": "Диабетическое", "slug": "diabetic"},
+    {"name": "Быстрое приготовление", "slug": "quick"}
+  ]
