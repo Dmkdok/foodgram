@@ -1,6 +1,6 @@
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import status, viewsets
@@ -184,6 +184,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if user.is_anonymous:
             raise NotAuthenticated("Пользователь должен быть аутентифицирован")
         serializer.save(author=user)
+
+    def redirect_to_short_link(self, request, pk):
+        """Перенаправляет на страницу рецепта по короткой ссылке."""
+        return redirect(f'/recipes/{pk}/')
 
     def _add_to_model(self, model, request, pk, error_message):
         """
