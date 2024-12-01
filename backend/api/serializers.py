@@ -3,6 +3,7 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from core.mixins import SubscriptionCheckMixin
 from core.validators import (
     max_amount_validator,
     max_cooking_time_validator,
@@ -41,8 +42,7 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
         """
         Создает и возвращает нового пользователя с зашифрованным паролем.
         """
-        user = CustomUser.objects.create_user(**validated_data)
-        return user
+        return CustomUser.objects.create_user(**validated_data)
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -81,6 +81,11 @@ class AvatarSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ('avatar',)
+
+    def validate(self, data):
+        if 'avatar' not in data or data['avatar'] is None:
+            raise ValidationError('Добавьте аватар')
+        return data
 
     def update(self, instance, validated_data):
         """Обновляет аватар пользователя."""
@@ -234,9 +239,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def validate_image(self, image):
         """Валидация изображения."""
         if image is None:
-            raise serializers.ValidationError(
-                'Необходимо добавить изображение.'
-            )
+            raise ValidationError('Необходимо добавить изображение.')
         return image
 
     def get_ingredients_in_recipe(self, recipe, ingredients):
@@ -274,11 +277,11 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         tags = value.get('tags')
         ingredients = value.get('recipe_ingredients')
         if not tags:
-            raise serializers.ValidationError(
+            raise ValidationError(
                 'Теги не могут быть пустыми',
             )
         if not ingredients:
-            raise serializers.ValidationError(
+            raise ValidationError(
                 'Ингредиенты не могут быть пустыми',
             )
         return value
@@ -290,7 +293,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         ingredients_set = set()
         for item in value:
             ingredient = item.get('ingredient')
-            print(f"Validating ingredient: {item}")
             if ingredient is None:
                 raise ValidationError('Ингредиент должен быть указан')
             if ingredient in ingredients_set:
@@ -336,9 +338,7 @@ class FollowSerializer(serializers.ModelSerializer):
         на самого себя.
         """
         if self.context['request'].user == value:
-            raise serializers.ValidationError(
-                'Нельзя подписываться на самого себя'
-            )
+            raise ValidationError('Нельзя подписываться на самого себя')
         return value
 
     def to_representation(self, instance):
@@ -348,19 +348,13 @@ class FollowSerializer(serializers.ModelSerializer):
         ).data
 
 
-class UnfollowSerializer(serializers.Serializer):
+class UnfollowSerializer(SubscriptionCheckMixin, serializers.Serializer):
     """Сериализатор для отписки."""
 
     def validate(self, data):
         """Проверяет, что пользователь подписан на автора."""
-        user = self.context['request'].user
-        author = self.context['view'].get_object()
-
-        if not Follow.objects.filter(user=user, author=author).exists():
-            raise serializers.ValidationError(
-                'Вы не подписаны на этого автора.'
-            )
-
+        if not self.is_subscribed():
+            raise ValidationError('Вы не подписаны на этого автора.')
         return data
 
     def delete(self, validated_data):
@@ -372,7 +366,9 @@ class UnfollowSerializer(serializers.Serializer):
         return {'detail': f'Вы успешно отписались от {author.username}'}
 
 
-class SubscriptionSerializer(serializers.ModelSerializer):
+class SubscriptionSerializer(
+    SubscriptionCheckMixin, serializers.ModelSerializer
+):
     """Сериализатор для подписок."""
 
     is_subscribed = serializers.SerializerMethodField()
@@ -395,8 +391,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         """Проверяет, подписан ли текущий пользователь на данного автора."""
-        user = self.context['request'].user
-        return Follow.objects.filter(user=user, author=obj).exists()
+        return self.is_subscribed(author=obj)
 
     def get_recipes(self, obj):
         """Возвращает рецепты автора с учетом параметра recipes_limit."""

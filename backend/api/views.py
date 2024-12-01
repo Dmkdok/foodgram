@@ -18,7 +18,6 @@ from recipes.models import (
     Tag,
 )
 from users.models import CustomUser
-
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import CustomPaginator
 from .permissions import IsAuthorOrAdminOrReadOnly
@@ -55,43 +54,35 @@ class UserViewSet(DjoserUserViewSet):
 
     @action(
         detail=False,
-        methods=('put', 'delete'),
+        methods=['put'],
         url_path='me/avatar',
         url_name='me-avatar',
         permission_classes=(IsAuthenticated,),
     )
-    def avatar(self, request):
-        """Управление аватаром текущего пользователя."""
+    def update_avatar(self, request):
+        """Обновление аватара текущего пользователя."""
         user = self.request.user
-        if request.method == 'PUT':
-            data = request.data
-            if 'avatar' not in data or not data['avatar']:
-                return Response(
-                    {"error": "Добавьте аватар."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            serializer = AvatarSerializer(
-                user,
-                data=request.data,
-                partial=True,
-                context={'request': request},
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    {"avatar": serializer.data['avatar']},
-                    status=status.HTTP_200_OK,
-                )
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer = AvatarSerializer(
+            user,
+            data=request.data,
+            partial=True,
+            context={'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {'avatar': serializer.data['avatar']},
+            status=status.HTTP_200_OK,
+        )
 
-        if request.method == 'DELETE':
-            user.avatar.delete()
-            user.save()
-            return Response(
-                {'message': 'Аватар удален'}, status=status.HTTP_204_NO_CONTENT
-            )
+    @update_avatar.mapping.delete
+    def delete_avatar(self, request):
+        """Удаление аватара текущего пользователя."""
+        request.user.avatar.delete()
+        request.user.save()
+        return Response(
+            {'message': 'Аватар удален'}, status=status.HTTP_204_NO_CONTENT
+        )
 
     @action(
         detail=False,
@@ -109,30 +100,30 @@ class UserViewSet(DjoserUserViewSet):
 
     @action(
         detail=True,
-        methods=['post', 'delete'],
+        methods=['post'],
         permission_classes=[IsAuthenticated],
         url_path='subscribe',
         url_name='subscribe',
     )
-    def subscribe_unsubscribe(self, request, id=None):
-        """Подписка/отписка на автора."""
+    def subscribe(self, request, id=None):
+        """Подписка на автора."""
         author = get_object_or_404(CustomUser, id=id)
+        serializer = FollowSerializer(
+            data={'author': author.id}, context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if request.method == 'POST':
-            serializer = FollowSerializer(
-                data={'author': author.id}, context={'request': request}
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        elif request.method == 'DELETE':
-            serializer = UnfollowSerializer(
-                data={}, context=self.get_serializer_context()
-            )
-            serializer.is_valid(raise_exception=True)
-            response_data = serializer.delete(serializer.validated_data)
-            return Response(response_data, status=status.HTTP_204_NO_CONTENT)
+    @subscribe.mapping.delete
+    def unsubscribe(self, request, id=None):
+        """Отписка от автора."""
+        serializer = UnfollowSerializer(
+            data={}, context=self.get_serializer_context()
+        )
+        serializer.is_valid(raise_exception=True)
+        response_data = serializer.delete(serializer.validated_data)
+        return Response(response_data, status=status.HTTP_204_NO_CONTENT)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -245,7 +236,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """Добавляет/удаляет рецепт в/из списка покупок."""
-        print(f"shopping cart: {self.request.data}")
         if request.method == 'POST':
             return self._add_to_model(
                 ShoppingCart,
